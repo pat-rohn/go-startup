@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"picloud.ch/schusti/pkg/config"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,15 +27,15 @@ func SetLogLevel(logLevel string, path string) bool {
 		break
 	case "--logfile", "-f":
 		fmt.Println("Check if file exist")
-		fullPath := config.LogPath + path
-		err := os.Chmod(config.LogPath, 0777)
+		fullPath := LogPath + path
+		err := os.Chmod(LogPath, 0777)
 		if err != nil {
 			fmt.Printf("Could not change permission rights %s: %v\n", path, err)
 			os.Exit(0)
 		}
 		if _, err := os.Stat(fullPath); err == nil {
 			fmt.Printf("File exist: %v\n", err)
-			//backupFile := config.LogPath + time.Now().Format(driverinterface.TimestampFormatFilename+path)
+			//backupFile := LogPath + time.Now().Format(driverinterface.TimestampFormatFilename+path)
 			//fmt.Printf("Backup to file %s\n", backupFile)
 
 			err := os.Rename(fullPath, fullPath+"2")
