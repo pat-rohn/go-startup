@@ -17,8 +17,7 @@ func InstallService(details ServiceDetails) error {
 		log.WithField("package", logPkg).Errorf("open failed: %v", err)
 		return err
 	}
-	cmd := `ExecStart=/home/` +
-		details.UserName + `/bin/SimpleObserver $` +
+	cmd := `ExecStart=` + details.ExecutablePath + ` $` +
 		details.ServiceName + `1 $` + details.ServiceName + `2 $` +
 		details.ServiceName + `3 $` + details.ServiceName + `4`
 	serviceText := `
@@ -50,8 +49,9 @@ WantedBy=multi-user.target
 		log.WithField("package", logPkg).Errorf("write servicesConf failed: %v", err)
 		return err
 	}
+	logPath := "/var/log/" + details.ServiceName + ".log"
 	servicesConf := `
-	` + details.ServiceName + `1=-f
+	` + details.ServiceName + `1=--logile ` + logPath + `
 	` + details.ServiceName + `2=-e
 	` + details.ServiceName + `3=` + details.ServiceName + `
 	` + details.ServiceName + `4=
@@ -62,7 +62,6 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	logPath := LogPath
 	err = os.MkdirAll(logPath, os.ModePerm)
 	if err != nil {
 		log.WithField("package", logPkg).Errorf("failed to create directory: %v %v", err, logPath)

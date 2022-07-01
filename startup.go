@@ -3,58 +3,59 @@ package startup
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-const (
-	logPkg string = "startup"
-)
+func SetLogPath(logfilepath string) error {
+	path := filepath.Dir(logfilepath)
+	absolutePath, err := filepath.Abs(logfilepath)
+	if err != nil {
+		log.Fatalf("Failed to get absolute path: %v\n", err)
+	}
+	fmt.Printf("Logfile path is: %s\n", absolutePath)
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		fmt.Printf("Folder does not exist %s: %v\n", path, err)
+		err = os.MkdirAll(path, 0755)
+		if err != nil {
+			log.Fatalf("Could not create folder: %v\n", err)
+		}
+	}
+	_, err = os.Stat(logfilepath)
+	if os.IsNotExist(err) {
+		fmt.Printf("File does not exist %s: %v\n", path, err)
+		f, err := os.OpenFile(logfilepath, os.O_WRONLY|os.O_CREATE, 0755)
+		if err != nil {
+			log.Fatalf("Could not open log-file: %v\n", err)
+		}
+		f.Close()
+	}
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   logfilepath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 3,
+		MaxAge:     100, //days
+		Compress:   false,
+	})
+	fmt.Printf("Log-path set to %s\n", logfilepath)
+	return nil
+}
 
-func SetLogLevel(logLevel string, path string) bool {
+func SetLogLevel(logLevel string) {
 	switch logLevel {
-	case "--trace", "-t":
+	case "--trace", "t":
 		log.SetLevel(log.TraceLevel)
-		break
-	case "--info", "-i":
+	case "--info", "i":
 		log.SetLevel(log.InfoLevel)
-		break
-	case "--warn", "-w":
+	case "--warn", "w":
 		log.SetLevel(log.WarnLevel)
-		break
-	case "--error", "-e":
+	case "--error", "e":
 		log.SetLevel(log.ErrorLevel)
-		break
-	case "--logfile", "-f":
-		fmt.Println("Check if file exist")
-		fullPath := LogPath + path
-		err := os.Chmod(LogPath, 0777)
-		if err != nil {
-			fmt.Printf("Could not change permission rights %s: %v\n", path, err)
-			os.Exit(0)
-		}
-		if _, err := os.Stat(fullPath); err == nil {
-			fmt.Printf("File exist: %v\n", err)
-			//backupFile := LogPath + time.Now().Format(driverinterface.TimestampFormatFilename+path)
-			//fmt.Printf("Backup to file %s\n", backupFile)
-
-			err := os.Rename(fullPath, fullPath+"2")
-			if err != nil {
-				fmt.Printf("Could not rename log-file %s: %v\n", path, err)
-				os.Exit(0)
-			}
-		}
-		f, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE, 0755)
-		if err != nil {
-			fmt.Printf("Could not open log-file: %v\n", err)
-			os.Exit(0)
-		}
-		log.SetOutput(f)
-		fmt.Printf("Logging set to %s\n", fullPath)
-		return false
 	default:
-		return false
+		fmt.Printf("Invalid log level '%s'\n", logLevel)
 	}
 	fmt.Printf("LogLevel is set to %s\n", logLevel)
-	return true
 }
